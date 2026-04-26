@@ -2,7 +2,7 @@ const CACHE_NAME = 'ecell-shell-v1';
 const DATA_CACHE_NAME = 'ecell-data-v1';
 
 // Your specific Supabase instance
-const SUPABASE_URL = 'gsureyytezrupxebasul.supabase.co';
+const SUPABASE_URL = 'REDACTED';
 
 // Core assets to pre-cache on installation
 const PRECACHE_ASSETS = [
