@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Successful | RIET E-Cell</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#980000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --riet-crimson: #980000;
+            --riet-gold: #FFCC00;
+            --telegram-blue: #0088cc;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overscroll-behavior-y: contain; /* Anti-Browser: No pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Clean Touch: No tap flash */
+        }
+
+        /* Professional Startup OS - Interactive Guard */
+        a, button, .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .bg-riet-crimson { background-color: var(--riet-crimson); }
+        .text-riet-crimson { color: var(--riet-crimson); }
+        .border-riet-gold { border-color: var(--riet-gold); }
+        .bg-telegram { background-color: var(--telegram-blue); }
+        
+        @keyframes subtle-bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-verify { animation: subtle-bounce 2s infinite ease-in-out; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center justify-center px-6">
+
+    <div id="loadingView" class="flex flex-col items-center">
+        <div class="w-12 h-12 border-4 border-gray-200 border-t-riet-crimson rounded-full animate-spin mb-4"></div>
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Securing Session...</p>
+    </div>
+
+    <div id="mainCard" class="hidden max-w-md w-full">
+        <div class="flex justify-center mb-6">
+            <span class="bg-green-50 text-green-700 text-[10px] font-black px-4 py-1.5 rounded-full border border-green-100 uppercase tracking-widest flex items-center gap-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Account Provisioned
+            </span>
+        </div>
+
+        <div class="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100 text-center">
+            <div class="p-10 pb-6">
+                <div class="w-20 h-20 bg-green-50 text-green-600 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-3 hover:rotate-0 transition-transform duration-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+                
+                <h2 class="text-3xl font-extrabold text-gray-900 tracking-tight selectable-text">Welcome, Founder!</h2>
+                <p class="text-gray-500 mt-3 text-sm font-medium leading-relaxed px-4 selectable-text">
+                    Your institutional profile is active. Final step: <span class="text-riet-crimson font-bold">Identity Binding</span> to generate your unique Team Access Code.
+                </p>
+            </div>
+
+            <div class="px-10 pb-10 space-y-4">
+                <div class="bg-blue-50/50 p-6 rounded-3xl border border-blue-100">
+                    <p id="countdownText" class="text-[10px] text-blue-600 font-black uppercase tracking-widest mb-4">Initializing Redirect...</p>
+                    
+                    <a id="botLinkBtn" href="#" target="_blank"
+                       class="bg-telegram text-white w-full py-5 rounded-2xl font-bold shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3">
+                        <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.2-.08-.06-.19-.04-.27-.02-.11.02-1.93 1.23-5.46 3.62-.51.35-.98.52-1.4.51-.46-.01-1.35-.26-2.01-.48-.81-.27-1.45-.42-1.39-.88.03-.24.36-.49.99-.75 3.88-1.69 6.46-2.8 7.76-3.33 3.68-1.5 4.45-1.76 4.95-1.77.11 0 .35.03.51.16.13.11.17.26.19.37.02.13.02.26.01.39z"/>
+                        </svg>
+                        <span>Setup via Telegram</span>
+                    </a>
+
+                    <button id="cancelRedirectBtn" onclick="cancelAutoRedirect()"
+                            class="mt-4 text-[10px] font-bold text-blue-400 hover:text-blue-600 uppercase tracking-widest transition hidden">
+                        Stop Auto-Redirect
+                    </button>
+                </div>
+
+                <div class="pt-2">
+                    <a href="gateway.html" class="text-xs font-bold text-gray-400 hover:text-riet-crimson transition flex items-center justify-center gap-1 group">
+                        Proceed to Gateway
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-8 flex justify-center items-center gap-4">
+            <div class="h-1 w-12 bg-gray-200 rounded-full"></div>
+            <p class="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em]">Step 2 of 2 Complete</p>
+            <div class="h-1 w-12 bg-riet-crimson rounded-full"></div>
+        </div>
+    </div>
+
+    <div id="errorCard" class="hidden max-w-sm w-full bg-white rounded-[2rem] shadow-2xl p-10 text-center border-t-4 border-riet-crimson">
+        <div class="text-5xl mb-6">🛑</div>
+        <h3 class="font-extrabold text-gray-900 text-xl tracking-tight">Session Conflict</h3>
+        <p class="text-gray-500 text-sm mt-2 font-medium">We couldn't verify your credentials. Returning to login...</p>
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+
+    <script>
+        // ── Supabase Init ─────────────────────────────────────────────────────
+        const SUPABASE_URL = 'https://gsureyytezrupxebasul.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdXJleXl0ZXpydXB4ZWJhc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODAwMDksImV4cCI6MjA5MTY1NjAwOX0.xJPef26ve7lr-yeoHvtZ12cIRaGuwkEKHVfzL8k4Bmc';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let countdownTimer = null;
+        let autoRedirectActive = true;
+
+        // ── Strict Waterfall Routing ────────────────────────────────────────
+        async function enforceWaterfall() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                window.location.href = 'login.html';
+                return null;
+            }
+            
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('role, is_verified')
+                .eq('id', user.id)
+                .single();
+                
+            if (profile?.is_verified) {
+                if (!profile.role) {
+                    window.location.href = 'gateway.html';
+                } else {
+                    window.location.href = `${profile.role}-dashboard.html`;
+                }
+                return null; // Stop execution, they shouldn't be on success.html
+            }
+            
+            return user; // Allow them to stay on success.html
+        }
+
+        (async () => {
+            try {
+                const user = await enforceWaterfall();
+                if (!user) return; // User was routed away
+
+                // Dynamic Link Binding
+                const botLink = `https://t.me/rietecell_bot?start=${user.id}`;
+                document.getElementById('botLinkBtn').href = botLink;
+
+                toggleView('mainCard');
+
+                // Auto-Redirect Flow
+                let seconds = 5;
+                document.getElementById('cancelRedirectBtn').classList.remove('hidden');
+                updateCountdown(seconds);
+
+                countdownTimer = setInterval(() => {
+                    seconds--;
+                    if (!autoRedirectActive) return;
+                    if (seconds <= 0) {
+                        clearInterval(countdownTimer);
+                        window.open(botLink, '_blank');
+                        updateCountdown(0, "Launching Telegram...");
+                    } else {
+                        updateCountdown(seconds);
+                    }
+                }, 1000);
+
+            } catch (err) {
+                toggleView('errorCard');
+                setTimeout(() => { window.location.href = 'login.html'; }, 2500);
+            }
+        })();
+
+        function toggleView(viewId) {
+            document.getElementById('loadingView').classList.add('hidden');
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        function updateCountdown(s, manualText) {
+            const el = document.getElementById('countdownText');
+            el.textContent = manualText || `Auto-opening Telegram in ${s}s...`;
+        }
+
+        function cancelAutoRedirect() {
+            autoRedirectActive = false;
+            clearInterval(countdownTimer);
+            updateCountdown(0, "Auto-Redirect Paused");
+            document.getElementById('cancelRedirectBtn').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

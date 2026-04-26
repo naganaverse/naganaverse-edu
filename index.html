@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RIET E-Cell | Startup Portal</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#980000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --riet-crimson: #980000;
+            --riet-gold: #FFCC00;
+        }
+        .bg-riet-red { background-color: var(--riet-crimson); }
+        .text-riet-red { color: var(--riet-crimson); }
+        .bg-riet-gold { background-color: var(--riet-gold); }
+
+        /* Professional Startup OS - UX Overrides */
+        body {
+            overscroll-behavior-y: contain; /* Prevents browser pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Removes touch flash */
+        }
+
+        /* Prevent text selection on UI components to feel like a native app */
+        nav, button, a, .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Allow selection for headings/content if needed */
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-900">
+
+    <nav class="bg-white shadow-md border-b-4 border-riet-gold p-4 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <img src="logo.png" alt="RIET Logo" class="h-10 w-auto object-contain">
+            <h1 class="font-bold text-xl tracking-tight">RIET <span class="text-riet-red">E-CELL</span></h1>
+        </div>
+        <a href="login.html" class="px-4 py-2 text-riet-red font-semibold border border-riet-red rounded-lg hover:bg-riet-red hover:text-white transition">Login</a>
+    </nav>
+    
+
+    <section class="py-16 px-6 text-center bg-white">
+        <span class="bg-riet-gold text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">26 Years of Excellence</span>
+        <h2 class="text-4xl font-extrabold mt-4 leading-tight selectable-text">Empowering the Next Generation of <span class="text-riet-red">Founders</span></h2>
+        <p class="mt-4 text-gray-600 max-w-md mx-auto selectable-text">The official startup incubation portal for Rajasthan Institute of Engineering and Technology.</p>
+        
+        <div class="mt-8 flex flex-col gap-3 max-w-xs mx-auto">
+            <a href="register.html" class="bg-riet-red text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:opacity-90 transition active:scale-95">Join the Cohort</a>
+            <a href="https://rietjaipur.ac.in" target="_blank" class="text-sm text-gray-500 underline">Official RIET Website</a>
+        </div>
+    </section>
+
+    <section class="bg-gray-100 py-10 px-6 border-t border-gray-200">
+        <div class="max-w-md mx-auto text-center">
+            <h3 class="font-bold text-lg mb-4">Visit Our Campus</h3>
+            <p class="text-sm text-gray-600 mb-6 italic">Ranked #1 Engineering College in Rajasthan</p>
+            
+            <a href="https://maps.google.com/?q=Rajasthan+Institute+of+Engineering+and+Technology+Jaipur" target="_blank" class="flex items-center justify-center gap-2 bg-white border border-gray-300 py-3 rounded-lg shadow-sm hover:bg-gray-50 transition active:scale-95">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-riet-red" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span class="font-medium">Locate Us on Maps</span>
+            </a>
+        </div>
+    </section>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+    <script>
+    let deferredPrompt;
+    
+    // 1. Create the Install Button dynamically
+    const installBtn = document.createElement('button');
+    installBtn.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+        <span>Install Startup OS</span>
+    `;
+    installBtn.className = "fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#980000] text-white px-6 py-3 rounded-full font-bold shadow-2xl flex items-center gap-2 z-50 hidden active:scale-95 transition-transform";
+    document.body.appendChild(installBtn);
+
+    // 2. Listen for the browser's secret "Ready to Install" signal
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault(); // Stop the default mini-infobar
+        deferredPrompt = e;
+        installBtn.classList.remove('hidden'); // Show our custom button
+    });
+
+    // 3. Trigger the native install prompt when clicked
+    installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                installBtn.classList.add('hidden'); // Hide if installed
+            }
+            deferredPrompt = null;
+        }
+    });
+    </script>
+    
+</body>
+</html>

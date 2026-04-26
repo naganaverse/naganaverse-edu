@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gateway | RIET E-Cell</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#980000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Professional Startup OS - UX Overrides */
+        body {
+            overscroll-behavior-y: contain; /* Anti-Browser: No pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Clean Touch: No tap flash */
+        }
+
+        /* Interactive Guard: Prevent text selection on buttons */
+        button, .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center justify-center p-6">
+    <div class="max-w-4xl w-full text-center">
+        <h2 class="text-3xl font-black text-gray-900 mb-8 selectable-text">Choose Your Path</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            <button onclick="setRole('member')" class="bg-white p-8 rounded-[2.5rem] shadow-xl border-2 border-transparent hover:border-[#980000] active:scale-95 transition-all text-left group relative overflow-hidden flex flex-col items-center">
+                <div class="w-12 h-12 bg-red-50 text-[#980000] rounded-xl flex items-center justify-center font-bold mb-4 mx-auto group-hover:scale-110 transition-transform">M</div>
+                <h3 class="font-bold text-center w-full">Member</h3>
+                <p class="text-xs text-gray-400 mt-2 text-center w-full">I want to join a team.</p>
+            </button>
+
+            <button onclick="setRole('leader')" class="bg-white p-8 rounded-[2.5rem] shadow-xl border-2 border-transparent hover:border-blue-600 active:scale-95 transition-all text-left group relative overflow-hidden flex flex-col items-center">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold mb-4 mx-auto group-hover:scale-110 transition-transform">L</div>
+                <h3 class="font-bold text-center w-full">Team Leader</h3>
+                <p class="text-xs text-gray-400 mt-2 text-center w-full">I want to lead a project.</p>
+            </button>
+
+            <button onclick="setRole('mentor')" class="bg-white p-8 rounded-[2.5rem] shadow-xl border-2 border-transparent hover:border-purple-600 active:scale-95 transition-all text-left group relative overflow-hidden flex flex-col items-center">
+                <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center font-bold mb-4 mx-auto group-hover:scale-110 transition-transform">E</div>
+                <h3 class="font-bold text-center w-full">Mentor</h3>
+                <p class="text-xs text-gray-400 mt-2 text-center w-full">I want to guide others.</p>
+            </button>
+
+        </div>
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+
+    <script>
+        // ── Supabase Configuration ──────────────────────────────────────────
+        const SUPABASE_URL = 'https://gsureyytezrupxebasul.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdXJleXl0ZXpydXB4ZWJhc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODAwMDksImV4cCI6MjA5MTY1NjAwOX0.xJPef26ve7lr-yeoHvtZ12cIRaGuwkEKHVfzL8k4Bmc';
+        
+        // Renamed to supabaseClient to prevent crashing the global CDN object
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentUser = null;
+
+        // ── Strict Waterfall Routing ────────────────────────────────────────
+        async function enforceWaterfall() {
+            console.log("1. Initiating Waterfall Shield...");
+            
+            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+            if (authError || !user) {
+                console.error("2. No user session detected. Routing to login.html");
+                window.location.href = 'login.html';
+                return null;
+            }
+            
+            console.log("2. Session found for user:", user.id);
+            
+            const { data: profile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('role, is_verified')
+                .eq('id', user.id)
+                .single();
+                
+            if (profileError) {
+                console.error("3. Critical error fetching profile state:", profileError.message);
+                alert("Database Error: " + profileError.message);
+                return null;
+            }
+                
+            if (!profile?.is_verified) {
+                console.warn("3. SHIELD TRIGGERED: User not verified. Routing to success.html");
+                window.location.href = 'success.html';
+                return null;
+            }
+            
+            if (profile.role) {
+                console.warn("3. SHIELD TRIGGERED: User already has role. Routing to dashboard.");
+                window.location.href = `${profile.role}-dashboard.html`;
+                return null; 
+            }
+            
+            console.log("3. User cleared for Gateway access.");
+            return user; 
+        }
+
+        // Fire shield immediately
+        (async () => {
+            currentUser = await enforceWaterfall();
+        })();
+
+        // ── Role Assignment Execution ───────────────────────────────────────
+        async function setRole(selectedRole) {
+            console.log(`\n--- Execution Started for role: ${selectedRole.toUpperCase()} ---`);
+            
+            if (!currentUser) {
+                console.error("Execution blocked: currentUser is null.");
+                alert("Session not fully loaded yet or you are not verified. Please wait.");
+                return;
+            }
+            
+            console.log("Step 1: Disabling UI to prevent double-execution.");
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'pointer-events-none');
+            });
+
+            try {
+                console.log(`Step 2: Sending UPDATE via RPC to Supabase`);
+                const { error } = await supabaseClient
+                    .rpc('set_user_role', { selected_role: selectedRole });
+
+                if (error) {
+                    throw error;
+                }
+                
+                console.log("Step 3: Database UPDATE successful!");
+                console.log(`Step 4: Executing immediate redirect to ${selectedRole}-dashboard.html`);
+                
+                window.location.href = `${selectedRole}-dashboard.html`;
+
+            } catch (error) {
+                console.error("CRITICAL FAILURE in database UPDATE:", error);
+                alert("ERROR UPDATING ROLE: " + (error.message || "Unknown Database Failure"));
+                
+                // Re-enable UI so you aren't stuck on a dead page if it fails
+                buttons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'pointer-events-none');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

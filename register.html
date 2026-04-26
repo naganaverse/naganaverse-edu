@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | RIET E-Cell</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#980000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --riet-crimson: #980000;
+            --riet-gold: #FFCC00;
+        }
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overscroll-behavior-y: contain; /* Anti-Browser: No pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Clean Touch: No tap flash */
+        }
+
+        /* Professional Startup OS - Interactive Guard */
+        nav, button, .step-dot, .step-line {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .bg-riet-crimson { background-color: var(--riet-crimson); }
+        .text-riet-crimson { color: var(--riet-crimson); }
+        .border-riet-gold { border-color: var(--riet-gold); }
+        
+        .step-panel { display: none; animation: slideUp 0.3s ease-out; }
+        .step-panel.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .step-dot {
+            width: 2.5rem; height: 2.5rem;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.875rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .step-dot.done { background: #16a34a; color: white; transform: scale(0.9); }
+        .step-dot.current { background: var(--riet-crimson); color: white; box-shadow: 0 0 15px rgba(152, 0, 0, 0.3); }
+        .step-dot.pending { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; }
+
+        .step-line { flex: 1; height: 3px; background: #f1f5f9; margin: 0 0.75rem; border-radius: 2px; }
+        .step-line.done { background: #16a34a; transition: background 0.6s ease; }
+
+        #backModal { display: none; backdrop-filter: blur(4px); }
+        #backModal.show { display: flex; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen pb-12">
+
+    <div id="toastContainer" class="fixed top-6 right-6 z-[100] space-y-3 max-w-xs w-full"></div>
+
+    <div id="backModal" class="fixed inset-0 bg-slate-900/60 z-50 items-center justify-center px-6">
+        <div class="bg-white rounded-[2rem] shadow-2xl p-8 max-w-sm w-full text-center border-t-8 border-riet-crimson">
+            <div class="w-16 h-16 bg-red-50 text-riet-crimson rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </div>
+            <h3 class="font-extrabold text-gray-900 text-xl tracking-tight">Return to Previous?</h3>
+            <p class="text-gray-500 text-sm mt-2 font-medium">Your current inputs will be saved, but you'll need to re-verify them when you return.</p>
+            <div class="grid grid-cols-2 gap-3 mt-8">
+                <button onclick="cancelBack()" class="py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-xs uppercase tracking-widest hover:bg-gray-200 transition">Stay</button>
+                <button onclick="confirmBack()" class="py-4 rounded-2xl bg-riet-crimson text-white font-bold text-xs uppercase tracking-widest hover:shadow-lg transition">Go Back</button>
+            </div>
+        </div>
+    </div>
+
+    <nav class="bg-white shadow-sm border-b-4 border-riet-gold p-4 flex justify-between items-center px-6 md:px-12 mb-8">
+        <div class="flex items-center gap-3">
+            <img src="logo.png" alt="RIET Logo" class="h-10 w-auto">
+            <h1 class="font-extrabold text-lg tracking-tighter text-gray-900">RIET <span class="text-riet-crimson">E-CELL</span></h1>
+        </div>
+        <a href="login.html" class="text-xs font-bold text-riet-crimson hover:underline">Sign In Instead</a>
+    </nav>
+
+    <div class="max-w-lg mx-auto px-6">
+        <div class="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-100">
+            
+            <div class="bg-white px-10 pt-10 pb-6 border-b border-gray-50">
+                <div class="flex items-center mb-4">
+                    <div id="dot1" class="step-dot current">1</div>
+                    <div id="line1" class="step-line"></div>
+                    <div id="dot2" class="step-dot pending">2</div>
+                    <div id="line2" class="step-line"></div>
+                    <div id="dot3" class="step-dot pending">3</div>
+                </div>
+                <div class="flex justify-between px-1 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                    <span>Account</span>
+                    <span>Identity</span>
+                    <span>Details</span>
+                </div>
+            </div>
+
+            <div class="p-10">
+                <div id="step1" class="step-panel active space-y-6">
+                    <div class="bg-gray-100 p-1.5 rounded-2xl flex items-center mb-2">
+                        <button id="btn-student" type="button" onclick="setRegType('student')" class="flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest bg-white shadow-sm text-gray-900 transition-all">Student</button>
+                        <button id="btn-mentor" type="button" onclick="setRegType('mentor')" class="flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-all">Mentor</button>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-extrabold text-gray-900 tracking-tight mb-1">Account Credentials</h3>
+                        <p class="text-xs text-gray-400 font-medium">Use your official institutional email if possible.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Address</label>
+                            <input type="email" id="email" class="val-target w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="name@rietjaipur.ac.in">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Password</label>
+                            <input type="password" id="password" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="Minimum 8 characters">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Confirm Password</label>
+                            <input type="password" id="confirmPassword" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="Verify password">
+                        </div>
+                    </div>
+                    <button onclick="goNext(1, this)" class="w-full bg-riet-crimson text-white py-5 rounded-2xl font-bold shadow-xl shadow-red-900/10 hover:shadow-red-900/20 transition-all flex items-center justify-center gap-2 group active:scale-95">
+                        <span>Proceed to Identity</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+                    </button>
+                </div>
+
+                <div id="step2" class="step-panel space-y-6">
+                    <div>
+                        <h3 class="text-xl font-extrabold text-gray-900 tracking-tight mb-1">Personal Identity</h3>
+                        <p class="text-xs text-gray-400 font-medium">This information will be verified against college records.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Full Name</label>
+                            <input type="text" id="fullName" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="Official Legal Name">
+                        </div>
+                        <div class="student-only grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Father's Name</label>
+                                <input type="text" id="fatherName" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="Guardian Name">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">University Roll No</label>
+                                <input type="text" id="rollNo" class="val-target w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all uppercase" placeholder="e.g. 23ERICE001">
+                            </div>
+                        </div>
+                        <div class="mentor-only hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Designation</label>
+                                <input type="text" id="designation" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="e.g. Professor">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Expertise Domain</label>
+                                <input type="text" id="expertise" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="e.g. Cyber, Startup">
+                            </div>
+                        </div>
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">WhatsApp Contact</label>
+                            <input type="tel" id="whatsapp" pattern="[0-9]{10}" maxlength="10" class="val-target w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="10-Digit Mobile Number">
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="requestBack(2)" class="flex-1 py-5 rounded-2xl bg-gray-50 border border-gray-200 text-gray-500 font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition active:scale-95">Back</button>
+                        <button onclick="goNext(2, this)" class="flex-[2] py-5 bg-riet-crimson text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-red-900/10 hover:shadow-red-900/20 transition flex items-center justify-center gap-2 active:scale-95">
+                            <span>Continue</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="step3" class="step-panel space-y-6">
+                    <div>
+                        <h3 id="step3-title" class="text-xl font-extrabold text-gray-900 tracking-tight mb-1">Academic Status</h3>
+                        <p id="step3-desc" class="text-xs text-gray-400 font-medium">Finalizing your portal provisioning.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="space-y-1">
+                            <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Primary Branch</label>
+                            <select id="dept" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all appearance-none">
+                                <option value="">Select Branch</option>
+                                <option value="CSE">CSE</option>
+                                <option value="CS">CS</option>
+                                <option value="IT">IT</option>
+                                <option value="EEE">EEE</option>
+                                <option value="ECE">ECE</option>
+                                <option value="ME">ME</option>
+                                <option value="CE">CE</option>
+                                <option value="AI & DS">AI & DS</option>
+                            </select>
+                        </div>
+                        <div class="student-only grid grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Section</label>
+                                <input type="text" id="section" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="e.g. A">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Year</label>
+                                <select id="year" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all appearance-none">
+                                    <option value="">Select Year</option>
+                                    <option value="1">1st Year</option>
+                                    <option value="2">2nd Year</option>
+                                    <option value="3">3rd Year</option>
+                                    <option value="4">4th Year</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="requestBack(3)" class="flex-1 py-5 rounded-2xl bg-gray-50 border border-gray-200 text-gray-500 font-bold text-xs uppercase tracking-widest hover:bg-gray-100 transition active:scale-95">Back</button>
+                        <button id="submitBtn" onclick="handleSubmit(this)" class="flex-[2] py-5 bg-green-600 text-white rounded-2xl font-bold text-xs uppercase tracking-widest shadow-xl shadow-green-900/10 hover:bg-green-700 transition flex items-center justify-center gap-2 active:scale-95">
+                            <span>Complete Registration</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+
+    <script>
+        const SUPABASE_URL = 'https://gsureyytezrupxebasul.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdXJleXl0ZXpydXB4ZWJhc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODAwMDksImV4cCI6MjA5MTY1NjAwOX0.xJPef26ve7lr-yeoHvtZ12cIRaGuwkEKHVfzL8k4Bmc';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Clear error styles automatically when user types
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => {
+                input.classList.remove('border-red-500', 'bg-red-50');
+            });
+        });
+
+        // Security Check
+        (async () => {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) window.location.href = 'gateway.html';
+        })();
+
+        let currentStep = 1;
+        let pendingBackStep = null;
+        let regType = 'student';
+
+        function toTitleCase(str) {
+            if (!str) return null;
+            return str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
+
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            const bg = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+            toast.className = `${bg} text-white px-6 py-4 rounded-2xl shadow-2xl font-bold text-xs uppercase tracking-widest border-b-4 border-black/10 animate-slide-in`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => { toast.classList.add('opacity-0', 'translate-x-12'); setTimeout(() => toast.remove(), 500); }, 4000);
+        }
+
+        function setRegType(type) {
+            regType = type;
+            const btnStudent = document.getElementById('btn-student');
+            const btnMentor = document.getElementById('btn-mentor');
+            
+            if (type === 'student') {
+                btnStudent.className = "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest bg-white shadow-sm text-gray-900 transition-all";
+                btnMentor.className = "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-all";
+                document.querySelectorAll('.student-only').forEach(el => el.classList.remove('hidden'));
+                document.querySelectorAll('.mentor-only').forEach(el => el.classList.add('hidden'));
+                document.getElementById('step3-title').textContent = "Academic Status";
+                document.getElementById('step3-desc').textContent = "Finalizing your student portal provisioning.";
+            } else {
+                btnMentor.className = "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest bg-white shadow-sm text-gray-900 transition-all";
+                btnStudent.className = "flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-all";
+                document.querySelectorAll('.student-only').forEach(el => el.classList.add('hidden'));
+                document.querySelectorAll('.mentor-only').forEach(el => el.classList.remove('hidden'));
+                document.getElementById('step3-title').textContent = "Professional Details";
+                document.getElementById('step3-desc').textContent = "Link your profile to an institutional department.";
+            }
+        }
+
+        function showStep(n) {
+            document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+            document.getElementById(`step${n}`).classList.add('active');
+            currentStep = n;
+            updateProgress(n);
+        }
+
+        function updateProgress(n) {
+            for (let i = 1; i <= 3; i++) {
+                const dot = document.getElementById(`dot${i}`);
+                const line = document.getElementById(`line${i}`);
+                if (i < n) { dot.className = 'step-dot done'; dot.innerHTML = '✓'; if(line) line.className = 'step-line done'; }
+                else if (i === n) { dot.className = 'step-dot current'; dot.textContent = i; if(line) line.className = 'step-line'; }
+                else { dot.className = 'step-dot pending'; dot.textContent = i; if(line) line.className = 'step-line'; }
+            }
+        }
+
+        async function validateStepAsync(n) {
+            if (n === 1) {
+                const email = document.getElementById('email').value;
+                const p1 = document.getElementById('password').value;
+                const p2 = document.getElementById('confirmPassword').value;
+                if (!email || !email.includes('@')) { showToast("Valid Email Required"); return false; }
+                if (p1.length < 8) { showToast("Password: Min 8 Chars"); return false; }
+                if (p1 !== p2) { showToast("Passwords Mismatch"); return false; }
+                return true;
+            }
+            if (n === 2) {
+                if (!document.getElementById('fullName').value.trim()) { showToast("Full Name Required"); return false; }
+                const phoneInput = document.getElementById('whatsapp');
+                const phone = phoneInput.value.trim();
+                if (!/^\d{10}$/.test(phone)) { 
+                    showToast("Phone must be exactly 10 digits"); 
+                    phoneInput.classList.add('border-red-500', 'bg-red-50');
+                    return false; 
+                }
+                let roll = "";
+                let queryBuilder = supabaseClient.from('profiles').select('roll_no, whatsapp_no');
+                if (regType === 'student') {
+                    const rollInput = document.getElementById('rollNo');
+                    roll = rollInput.value.trim().toUpperCase();
+                    if (!roll) { showToast("Roll Number Required"); return false; }
+                    if (!/^[a-zA-Z0-9]+$/.test(roll)) { 
+                        showToast("Roll No must be alphanumeric"); 
+                        rollInput.classList.add('border-red-500', 'bg-red-50');
+                        return false; 
+                    }
+                    queryBuilder = queryBuilder.or(`roll_no.eq.${roll},whatsapp_no.eq.${phone}`);
+                } else {
+                    if (!document.getElementById('designation').value.trim()) { showToast("Designation Required"); return false; }
+                    if (!document.getElementById('expertise').value.trim()) { showToast("Expertise Required"); return false; }
+                    queryBuilder = queryBuilder.or(`whatsapp_no.eq.${phone}`);
+                }
+                const { data, error } = await queryBuilder;
+                if (data && data.length > 0) {
+                    let hasDuplicate = false;
+                    data.forEach(row => {
+                        if (regType === 'student' && row.roll_no === roll) {
+                            document.getElementById('rollNo').classList.add('border-red-500', 'bg-red-50');
+                            showToast("This Roll Number is already registered.");
+                            hasDuplicate = true;
+                        }
+                        if (row.whatsapp_no === phone) {
+                            document.getElementById('whatsapp').classList.add('border-red-500', 'bg-red-50');
+                            showToast("This Phone Number is already registered.");
+                            hasDuplicate = true;
+                        }
+                    });
+                    if (hasDuplicate) return false;
+                }
+                return true;
+            }
+            if (n === 3) {
+                if (!document.getElementById('dept').value) { showToast("Select Branch"); return false; }
+                if (regType === 'student') {
+                    if (!document.getElementById('year').value) { showToast("Select Academic Year"); return false; }
+                }
+                return true;
+            }
+        }
+
+        async function goNext(from, btnElement) { 
+            const originalHTML = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = `<svg class="animate-spin h-5 w-5 mx-auto text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>`;
+            const isValid = await validateStepAsync(from); 
+            btnElement.disabled = false;
+            btnElement.innerHTML = originalHTML;
+            if (isValid) showStep(from + 1); 
+        }
+
+        function requestBack(from) { pendingBackStep = from; document.getElementById('backModal').classList.add('show'); }
+        function cancelBack() { document.getElementById('backModal').classList.remove('show'); }
+        function confirmBack() { cancelBack(); showStep(pendingBackStep - 1); }
+
+        async function handleSubmit(btnElement) {
+            const isStep3Valid = await validateStepAsync(3);
+            if (!isStep3Valid) return;
+            const originalHTML = btnElement.innerHTML;
+            btnElement.disabled = true;
+            btnElement.innerHTML = `<svg class="animate-spin h-5 w-5 text-white inline-block mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>Provisioning...</span>`;
+            const isNoDuplicates = await validateStepAsync(2);
+            if (!isNoDuplicates) {
+                showStep(2);
+                btnElement.disabled = false;
+                btnElement.innerHTML = originalHTML;
+                return;
+            }
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const { data: authData, error: authError } = await supabaseClient.auth.signUp({ email, password });
+            if (authError) { 
+                showToast(authError.message); 
+                btnElement.disabled = false; 
+                btnElement.innerHTML = originalHTML; 
+                return; 
+            }
+            const profileData = {
+                id: authData.user.id,
+                full_name: toTitleCase(document.getElementById('fullName').value.trim()),
+                whatsapp_no: document.getElementById('whatsapp').value.trim(),
+                department: document.getElementById('dept').value
+            };
+            if (regType === 'student') {
+                profileData.father_name = toTitleCase(document.getElementById('fatherName').value.trim());
+                profileData.roll_no = document.getElementById('rollNo').value.trim().toUpperCase();
+                profileData.section = document.getElementById('section').value.trim().toUpperCase();
+                profileData.semester_year = document.getElementById('year').value;
+            } else {
+                profileData.designation = toTitleCase(document.getElementById('designation').value.trim());
+                profileData.expertise = toTitleCase(document.getElementById('expertise').value.trim());
+            }
+            const { error: profError } = await supabaseClient.from('profiles').insert([profileData]);
+            if (profError) { 
+                showToast("Profile Sync Error: " + profError.message); 
+                btnElement.disabled = false; 
+                btnElement.innerHTML = originalHTML; 
+                return; 
+            }
+            showToast("Success! Routing to Dashboard...", "success");
+            setTimeout(() => window.location.href = 'success.html', 1500);
+        }
+    </script>
+</body>
+</html>
+
+    
+    

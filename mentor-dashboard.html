@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mentor Dashboard | RIET E-Cell</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#980000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --riet-crimson: #980000;
+            --riet-gold: #FFCC00;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overscroll-behavior-y: contain; /* Anti-Browser: No pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Clean Touch: No tap flash */
+        }
+
+        /* Professional Startup OS - Interactive Guard */
+        nav, button, .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
+
+    <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-3"></div>
+
+    <nav class="bg-white shadow-sm border-b-4 border-[#FFCC00] p-4 w-full">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3 no-select">
+                <div class="w-10 h-10 bg-[#980000] rounded-lg text-white flex items-center justify-center font-black text-xl">R</div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tighter text-gray-900 leading-none">RIET <span class="text-[#980000]">E-CELL</span></h1>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Mentor Workspace</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-6">
+                <span id="user-greeting" class="text-sm font-bold text-gray-700 no-select">Loading...</span>
+                <button onclick="handleLogout(this)" class="text-xs font-bold text-gray-400 hover:text-[#980000] uppercase tracking-widest transition flex items-center gap-2 active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-6xl mx-auto p-6 w-full flex-grow py-10">
+        
+        <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                <div class="no-select">
+                    <h2 class="text-3xl font-black text-gray-900 tracking-tight">Startup Cohort</h2>
+                    <p class="text-gray-500 mt-2 text-sm font-medium">Review active teams and claim startups you wish to guide.</p>
+                </div>
+                
+                <div class="relative w-full md:w-96">
+                    <svg class="w-5 h-5 absolute left-4 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" id="search-teams" placeholder="Search startups by name or code..." class="w-full text-sm border border-gray-200 bg-gray-50 rounded-2xl pl-12 pr-4 py-3 focus:ring-2 focus:ring-[#980000] focus:border-transparent outline-none transition">
+                </div>
+            </div>
+        </div>
+
+        <div id="team-directory" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="col-span-full p-12 text-center bg-white rounded-[2rem] border border-dashed border-gray-300 no-select">
+                <div class="w-10 h-10 border-4 border-gray-200 border-t-[#980000] rounded-full animate-spin mx-auto mb-4"></div>
+                <p class="text-gray-400 font-bold uppercase tracking-widest text-xs">Loading Startups...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+
+    <script>
+        const SUPABASE_URL = 'https://gsureyytezrupxebasul.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdXJleXl0ZXpydXB4ZWJhc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODAwMDksImV4cCI6MjA5MTY1NjAwOX0.xJPef26ve7lr-yeoHvtZ12cIRaGuwkEKHVfzL8k4Bmc';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let allTeams = [];
+        let mentorMap = {}; // Dictionary to store mentor names by ID
+
+        // ── Toast System ──
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const colors = type === 'success' ? 'bg-green-600 border-green-700' : 'bg-red-600 border-red-700';
+            toast.className = `px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm border-b-4 animate-bounce-in ${colors}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-12');
+                setTimeout(() => toast.remove(), 500);
+            }, 3500);
+        }
+
+        // ── Core Initialization Flow ──
+        async function initDashboard() {
+            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+            
+            if (authError || !user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+
+            // Strict Role Check (Shield)
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('role, full_name')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile || profile.role !== 'mentor') {
+                window.location.href = 'gateway.html'; // Kick non-mentors
+                return;
+            }
+
+            document.getElementById('user-greeting').innerText = `Prof. ${profile.full_name.split(' ')[0]}`;
+
+            await loadMentorDictionary();
+            await loadTeams();
+        }
+
+        // ── Load Mentor Data for the UI ──
+        async function loadMentorDictionary() {
+            const { data: mentors } = await supabaseClient
+                .from('profiles')
+                .select('id, full_name')
+                .eq('role', 'mentor');
+            
+            if (mentors) {
+                mentors.forEach(m => {
+                    mentorMap[m.id] = m.full_name;
+                });
+            }
+        }
+
+        // ── Load & Render Teams ──
+        async function loadTeams() {
+            const { data, error } = await supabaseClient
+                .from('teams')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                showToast("Error loading startups", "error");
+                return;
+            }
+            
+            allTeams = data || [];
+            renderTeams(allTeams);
+        }
+
+        function renderTeams(teamsArray) {
+            const container = document.getElementById('team-directory');
+            container.innerHTML = '';
+
+            if (teamsArray.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full p-12 text-center bg-white rounded-[2rem] border border-dashed border-gray-300 no-select">
+                        <p class="text-gray-400 font-bold">No startups match your criteria.</p>
+                    </div>`;
+                return;
+            }
+
+            teamsArray.forEach(t => {
+                const name = t.name || 'Unnamed Startup';
+                const code = t.team_code || 'N/A';
+                const idea = t.idea || 'No idea provided.';
+                
+                let actionHTML = '';
+
+                // Logic: Determine button/badge state
+                if (!t.mentor_id) {
+                    // Unclaimed
+                    actionHTML = `
+                        <button onclick="claimTeam('${t.id}')" id="btn-${t.id}" class="w-full bg-gray-900 text-white py-3 rounded-xl text-sm font-bold shadow-lg hover:bg-gray-800 transition-colors flex justify-center items-center gap-2 active:scale-95">
+                            <span>Claim as Mentor</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        </button>
+                    `;
+                } else if (t.mentor_id === currentUser.id) {
+                    // Claimed by CURRENT user
+                    actionHTML = `
+                        <div class="w-full bg-green-50 text-green-700 border border-green-200 py-3 rounded-xl text-sm font-bold flex justify-center items-center gap-2 no-select">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                            <span>You are mentoring this team</span>
+                        </div>
+                    `;
+                } else {
+                    // Claimed by ANOTHER mentor
+                    const mentorName = mentorMap[t.mentor_id] || 'Another Mentor';
+                    actionHTML = `
+                        <div class="w-full bg-gray-100 text-gray-500 py-3 rounded-xl text-sm font-bold flex justify-center items-center text-center px-2 no-select">
+                            Mentored by: ${mentorName}
+                        </div>
+                    `;
+                }
+
+                const card = `
+                    <div class="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-shadow flex flex-col justify-between h-full relative overflow-hidden group">
+                        
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-full -mr-4 -mt-4 z-0 group-hover:bg-yellow-50 transition-colors"></div>
+                        
+                        <div class="relative z-10 mb-6">
+                            <div class="flex justify-between items-start mb-4">
+                                <h4 class="font-black text-gray-900 text-xl tracking-tight pr-4 selectable-text">${name}</h4>
+                                <span class="bg-[#980000] text-white text-[10px] font-bold px-2 py-1 rounded-md shadow-sm selectable-text">${code}</span>
+                            </div>
+                            
+                            <h5 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 no-select">Core Vision</h5>
+                            <p class="text-sm text-gray-600 leading-relaxed bg-gray-50 p-4 rounded-2xl border border-gray-100 selectable-text">${idea}</p>
+                        </div>
+                        
+                        <div class="relative z-10 mt-auto no-select">
+                            ${actionHTML}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // ── Claim Database Action ──
+        async function claimTeam(teamId) {
+            const btn = document.getElementById(`btn-${teamId}`);
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>Claiming...</span>`;
+
+            const { error } = await supabaseClient
+                .rpc('claim_team', { p_team_id: teamId });
+
+            if (error) {
+                showToast("Failed to claim team: " + error.message, "error");
+                btn.disabled = false;
+                btn.innerHTML = `<span>Claim as Mentor</span>`;
+                return;
+            }
+
+            showToast("Successfully claimed startup!", "success");
+
+            // Optimistic UI Update: Modify local array and re-render instantly
+            const teamIndex = allTeams.findIndex(t => t.id === teamId);
+            if (teamIndex !== -1) {
+                allTeams[teamIndex].mentor_id = currentUser.id;
+            }
+            
+            // Re-trigger the search filter to maintain UI state
+            const currentSearch = document.getElementById('search-teams').value.toLowerCase();
+            const filtered = allTeams.filter(t => 
+                (t.name && t.name.toLowerCase().includes(currentSearch)) ||
+                (t.team_code && t.team_code.toLowerCase().includes(currentSearch))
+            );
+            renderTeams(filtered);
+        }
+
+        // ── Search Engine ──
+        document.getElementById('search-teams').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allTeams.filter(t => 
+                (t.name && t.name.toLowerCase().includes(term)) ||
+                (t.team_code && t.team_code.toLowerCase().includes(term))
+            );
+            renderTeams(filtered);
+        });
+
+        // ── Bulletproof Logout ──
+        async function handleLogout(btnElement) {
+            if (btnElement) {
+                btnElement.innerHTML = "Exiting...";
+                btnElement.disabled = true;
+            }
+            try {
+                await supabaseClient.auth.signOut();
+            } catch (error) {
+                console.error("Supabase sign out error", error);
+            } finally {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Boot system on load
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>
+        

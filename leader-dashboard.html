@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leader Dashboard | RIET E-Cell</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#980000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --riet-crimson: #980000;
+            --riet-gold: #FFCC00;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overscroll-behavior-y: contain;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        nav, button, .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .bg-riet-crimson { background-color: var(--riet-crimson); }
+        .text-riet-crimson { color: var(--riet-crimson); }
+        .border-riet-gold { border-color: var(--riet-gold); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-3"></div>
+
+    <nav class="bg-white shadow-sm border-b-4 border-riet-gold p-4 flex justify-between items-center px-6 md:px-12">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-riet-crimson text-white rounded-lg flex items-center justify-center font-black text-xl">R</div>
+            <div>
+                <h1 class="font-extrabold text-xl tracking-tighter text-gray-900 leading-none">RIET <span class="text-riet-crimson">E-CELL</span></h1>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Leader Dashboard</p>
+            </div>
+        </div>
+        <button onclick="handleLogout(this)" class="text-xs font-bold text-gray-500 hover:text-riet-crimson transition flex items-center gap-2 active:scale-95">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+            Sign Out
+        </button>
+    </nav>
+
+    <main class="flex-grow max-w-5xl w-full mx-auto px-6 py-12">
+        
+        <div id="loadingState" class="flex flex-col items-center justify-center py-20">
+            <div class="w-10 h-10 border-4 border-gray-200 border-t-riet-crimson rounded-full animate-spin mb-4"></div>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Loading Workspace...</p>
+        </div>
+
+        <div id="createTeamState" class="hidden max-w-2xl mx-auto">
+            <div class="mb-8 text-center">
+                <h2 class="text-3xl font-black text-gray-900 tracking-tight no-select">Found Your Startup</h2>
+                <p class="text-gray-500 mt-2 text-sm font-medium no-select">Define your vision and start recruiting top talent from the cohort.</p>
+            </div>
+
+            <div class="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-8 md:p-10">
+                <form id="teamForm" onsubmit="handleCreateTeam(event)" class="space-y-6">
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 no-select">Startup / Team Name</label>
+                        <input type="text" id="teamName" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="e.g. Naganaverse Industries">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 no-select">Core Idea / Vision</label>
+                        <textarea id="teamIdea" required rows="4" class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="Describe the problem you are solving and your proposed solution..."></textarea>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 no-select">Looking For (Roles)</label>
+                        <input type="text" id="teamLookingFor" required class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] outline-none transition-all" placeholder="e.g. UI/UX Designer, Python Backend, Marketing">
+                    </div>
+
+                    <button type="submit" id="submitTeamBtn" class="w-full bg-riet-crimson text-white py-5 rounded-2xl font-bold shadow-xl shadow-red-900/20 hover:bg-red-800 hover:-translate-y-1 transition-all flex items-center justify-center gap-3 active:scale-95">
+                        <span>Deploy Startup Profile</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="activeTeamState" class="hidden space-y-12">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white rounded-[2.5rem] shadow-xl border border-gray-100 p-8 md:p-10 relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-red-50 rounded-full -mr-16 -mt-16 z-0"></div>
+                        <div class="relative z-10">
+                            <span class="bg-green-100 text-green-800 text-[10px] font-extrabold px-3 py-1 rounded-full border border-green-200 uppercase tracking-widest mb-4 inline-block no-select">Active Status</span>
+                            <span id="displayTeamCode" class="ml-2 bg-purple-100 text-purple-800 text-[10px] font-extrabold px-3 py-1 rounded-full border border-purple-200 uppercase tracking-widest mb-4 inline-block selectable-text">CODE</span>
+                            
+                            <h2 id="displayTeamName" class="text-4xl font-black text-gray-900 tracking-tight mb-4 selectable-text">Team Name</h2>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 no-select">Mission / Idea</h4>
+                                    <p id="displayTeamIdea" class="text-gray-600 font-medium leading-relaxed bg-gray-50 p-5 rounded-2xl border border-gray-100 selectable-text">Idea goes here...</p>
+                                </div>
+                                <div>
+                                    <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 no-select">Actively Recruiting</h4>
+                                    <p id="displayTeamLookingFor" class="text-[#980000] font-bold selectable-text">Roles go here...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div class="bg-white rounded-[2rem] shadow-lg border border-gray-100 p-8 h-full">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-extrabold text-gray-900 tracking-tight no-select">Incoming Requests</h3>
+                            <span id="incoming-req-count" class="bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded-lg no-select">0</span>
+                        </div>
+                        
+                        <div id="incoming-requests-container" class="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center h-4/5 no-select">
+                            <svg class="w-12 h-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg>
+                            <p class="text-sm font-bold text-gray-400">No applications yet.</p>
+                            <p class="text-xs text-gray-400 mt-1">When members apply, they appear here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-8">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                    <div class="no-select">
+                        <h3 class="font-extrabold text-2xl text-gray-900 tracking-tight">Cohort Directory</h3>
+                        <p class="text-sm text-gray-500 font-medium mt-1">Recruit verified members into your startup.</p>
+                    </div>
+                    
+                    <div class="relative w-full sm:w-72">
+                        <svg class="w-4 h-4 absolute left-4 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input type="text" id="search-members" placeholder="Search by name or dept..." class="w-full text-sm border border-gray-200 bg-gray-50 rounded-2xl pl-11 pr-4 py-3 focus:ring-2 focus:ring-[#980000] focus:border-transparent outline-none transition">
+                    </div>
+                </div>
+                
+                <div id="member-directory" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <p class="text-gray-400 font-medium text-sm no-select">Loading members...</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+
+    <script>
+        const SUPABASE_URL = 'https://gsureyytezrupxebasul.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdXJleXl0ZXpydXB4ZWJhc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODAwMDksImV4cCI6MjA5MTY1NjAwOX0.xJPef26ve7lr-yeoHvtZ12cIRaGuwkEKHVfzL8k4Bmc';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let currentTeam = null; 
+        let allMembers = [];
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const colors = type === 'success' ? 'bg-green-600 border-green-700' : 'bg-red-600 border-red-700';
+            toast.className = `px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm border-b-4 animate-bounce-in ${colors}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-12');
+                setTimeout(() => toast.remove(), 500);
+            }, 3500);
+        }
+
+        function toggleView(viewId) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('createTeamState').classList.add('hidden');
+            document.getElementById('activeTeamState').classList.add('hidden');
+            document.getElementById(viewId).classList.remove('hidden');
+        }
+
+        async function initDashboard() {
+            const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+            
+            if (authError || !user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (!profile || profile.role !== 'leader') {
+                window.location.href = 'gateway.html';
+                return;
+            }
+
+            const { data: team } = await supabaseClient
+                .from('teams')
+                .select('*')
+                .eq('leader_id', user.id)
+                .maybeSingle();
+
+            if (team) {
+                currentTeam = team;
+                document.getElementById('displayTeamName').textContent = team.name;
+                document.getElementById('displayTeamIdea').textContent = team.idea;
+                document.getElementById('displayTeamLookingFor').textContent = team.looking_for;
+                document.getElementById('displayTeamCode').textContent = team.team_code;
+                toggleView('activeTeamState');
+                await loadMembers(); 
+                await loadMyInvitations(); 
+            } else {
+                toggleView('createTeamState');
+            }
+        }
+
+        async function handleCreateTeam(event) {
+            event.preventDefault();
+            const btn = document.getElementById('submitTeamBtn');
+            const originalBtnHtml = btn.innerHTML;
+            
+            const name = document.getElementById('teamName').value.trim();
+            const idea = document.getElementById('teamIdea').value.trim();
+            const looking_for = document.getElementById('teamLookingFor').value.trim();
+
+            if (!name || !idea || !looking_for) return;
+
+            btn.disabled = true;
+            btn.innerHTML = `<span>Deploying...</span>`;
+
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('roll_no')
+                .eq('id', currentUser.id)
+                .single();
+
+            const rollNoStr = String(profile?.roll_no || '0000');
+            const generatedCode = 'ECELL-' + rollNoStr.slice(-4).toUpperCase();
+
+            const { error } = await supabaseClient
+                .from('teams')
+                .insert([{
+                    leader_id: currentUser.id,
+                    name: name,
+                    idea: idea,
+                    looking_for: looking_for,
+                    team_code: generatedCode
+                }]);
+
+            if (error) {
+                showToast(error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            } else {
+                showToast('Startup Profile Deployed!', 'success');
+                setTimeout(() => { initDashboard(); }, 1000);
+            }
+        }
+
+        // ── Phase 2: Core Interaction Systems ──
+        
+        async function loadMyInvitations() {
+            if (!currentTeam) return;
+            const { data: invs, error } = await supabaseClient.from('invitations')
+                .select('*')
+                .eq('team_id', currentTeam.id)
+                .eq('type', 'request')
+                .eq('status', 'pending');
+            
+            const container = document.getElementById('incoming-requests-container');
+            const countSpan = document.getElementById('incoming-req-count');
+            
+            if (error || !invs || invs.length === 0) {
+                countSpan.innerText = '0';
+                container.innerHTML = `<svg class="w-12 h-12 text-gray-300 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v16m8-8H4"/></svg><p class="text-sm font-bold text-gray-400">No applications yet.</p><p class="text-xs text-gray-400 mt-1">When members apply, they appear here.</p>`;
+                container.className = "border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center h-4/5 no-select";
+                return;
+            }
+            
+            countSpan.innerText = invs.length;
+            container.className = "space-y-3 overflow-y-auto max-h-64 h-4/5 pr-2"; 
+            
+            container.innerHTML = '';
+            for (const inv of invs) {
+                const { data: prof } = await supabaseClient.from('profiles').select('full_name, department').eq('id', inv.from_user_id).single();
+                const name = prof ? prof.full_name : 'A member';
+                const dept = prof ? prof.department : 'N/A';
+                
+                container.innerHTML += `
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3 justify-between items-start text-left">
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">${name}</p>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-widest">${dept} - Wants to join</p>
+                        </div>
+                        <div class="flex gap-2 w-full">
+                            <button onclick="respondInvitation('${inv.id}', 'accepted', this)" class="flex-1 bg-green-100 text-green-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-green-200 transition">Accept</button>
+                            <button onclick="respondInvitation('${inv.id}', 'rejected', this)" class="flex-1 bg-red-100 text-red-700 px-3 py-2 rounded-lg text-xs font-bold hover:bg-red-200 transition">Decline</button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function respondInvitation(invitationId, action, btnElement) {
+            const originalText = btnElement.innerText;
+            btnElement.innerText = action === 'accepted' ? 'Accepting...' : 'Declining...';
+            btnElement.disabled = true;
+
+            if (action === 'accepted') {
+                const { error } = await supabaseClient.rpc('accept_invitation', {
+                    p_invitation_id: invitationId
+                });
+
+                if (error) {
+                    showToast("Error adding member to team", "error");
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                } else {
+                    showToast("Member successfully added to your startup!", "success");
+                    loadMyInvitations();
+                }
+            } else {
+                const { error } = await supabaseClient.from('invitations')
+                    .update({ status: action })
+                    .eq('id', invitationId);
+                    
+                if (error) {
+                    showToast("Error updating request status", "error"); 
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                } else {
+                    showToast("Application rejected", "success");
+                    loadMyInvitations();
+                }
+            }
+        }
+
+        async function inviteMember(memberId, btnElement) {
+    if (!currentTeam) {
+        showToast("No active team", "error");
+        return;
+    }
+
+    const originalText = btnElement.innerText;
+
+    btnElement.innerText = "Inviting...";
+    btnElement.disabled = true;
+
+    const { error } = await supabaseClient
+        .from('invitations')
+        .insert([{
+            type: 'invite',
+            from_user_id: currentUser.id,
+            to_user_id: memberId,
+            team_id: currentTeam.id,
+            status: 'pending'
+        }]);
+
+    if (error) {
+        console.error("INVITE ERROR:", error);
+
+        showToast("Cannot invite (user already in team)", "error");
+
+        btnElement.innerText = originalText;
+        btnElement.disabled = false;
+
+        return; // ✅ IMPORTANT
+    }
+
+    showToast("Invitation sent", "success");
+    btnElement.innerText = "Sent";
+            }
+        // ── Member Directory Logic ──
+        async function loadMembers() {
+            const { data, error } = await supabaseClient
+                .from('profiles')
+                .select('id, full_name, department')
+                .eq('role', 'member')
+                .eq('is_verified', true);
+
+            if (error) {
+                console.error("Error loading members:", error);
+                return;
+            }
+            
+            allMembers = data || [];
+            renderMembers(allMembers);
+        }
+
+        function renderMembers(membersArray) {
+            const container = document.getElementById('member-directory');
+            container.innerHTML = '';
+
+            if (membersArray.length === 0) {
+                container.innerHTML = `<p class="col-span-full text-gray-400 font-medium text-sm p-4 text-center">No members found.</p>`;
+                return;
+            }
+
+            membersArray.forEach(m => {
+                const name = m.full_name || 'Unknown Member';
+                const dept = m.department || 'N/A';
+                
+                const card = `
+                    <div class="bg-gray-50 border border-gray-200 rounded-2xl p-5 flex flex-col justify-between h-full hover:border-[#980000] transition-colors">
+                        <div>
+                            <div class="w-10 h-10 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center font-bold mb-3 uppercase no-select">${name.charAt(0)}</div>
+                            <h4 class="font-bold text-gray-900 selectable-text">${name}</h4>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1 no-select">${dept}</p>
+                        </div>
+                        <button onclick="inviteMember('${m.id}', this)" class="mt-4 w-full bg-white border border-gray-300 text-gray-700 py-2 rounded-xl text-xs font-bold hover:bg-gray-100 transition active:scale-95">
+                            Invite to Team
+                        </button>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        // Updated Search: Now filters by Name OR Department
+        document.getElementById('search-members').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allMembers.filter(m => 
+                (m.full_name || '').toLowerCase().includes(term) ||
+                (m.department || '').toLowerCase().includes(term)
+            );
+            renderMembers(filtered);
+        });
+
+        async function handleLogout(btnElement) {
+            if (btnElement) {
+                btnElement.innerHTML = "Exiting...";
+                btnElement.disabled = true;
+            }
+            try {
+                await supabaseClient.auth.signOut();
+            } catch (error) {
+                console.error("Supabase sign out error", error);
+            } finally {
+                window.location.href = 'login.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Login | RIET E-Cell</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#980000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --riet-crimson: #980000;
+            --riet-gold: #FFCC00;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overscroll-behavior-y: contain; /* Anti-Browser: No pull-to-refresh */
+            -webkit-tap-highlight-color: transparent; /* Clean Touch: No tap flash */
+        }
+
+        /* Professional Startup OS - Interactive Guard */
+        nav, button, a {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .bg-riet-crimson { background-color: var(--riet-crimson); }
+        .text-riet-crimson { color: var(--riet-crimson); }
+        .border-riet-gold { border-color: var(--riet-gold); }
+        .focus-riet:focus { ring-color: var(--riet-crimson); border-color: var(--riet-crimson); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+    <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-3"></div>
+
+    <nav class="bg-white shadow-sm border-b-4 border-riet-gold p-4 flex justify-between items-center px-6 md:px-12">
+        <div class="flex items-center gap-3">
+            <img src="logo.png" alt="RIET Logo" class="h-12 w-auto">
+            <div>
+                <h1 class="font-extrabold text-xl tracking-tighter text-gray-900 leading-none">RIET <span class="text-riet-crimson">E-CELL</span></h1>
+                <p class="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">Innovation Hub</p>
+            </div>
+        </div>
+        <div class="hidden md:flex items-center gap-6">
+            <a href="https://rietjaipur.ac.in" class="text-xs font-bold text-gray-400 hover:text-riet-crimson transition">Official Website</a>
+            <a href="register.html" class="px-5 py-2 bg-riet-crimson text-white text-xs font-bold rounded-full hover:shadow-lg transition active:scale-95">Join Cohort</a>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center px-6 py-12">
+        <div class="max-w-md w-full">
+            <div class="flex justify-center mb-6">
+                <span class="bg-yellow-100 text-yellow-800 text-[10px] font-extrabold px-3 py-1 rounded-full border border-yellow-200 uppercase tracking-tighter">
+                    26 Years of Academic Excellence
+                </span>
+            </div>
+
+            <div class="bg-white rounded-[2rem] shadow-2xl overflow-hidden border border-gray-100">
+                <div class="bg-riet-crimson p-10 text-center relative">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mt-12"></div>
+                    
+                    <h2 class="text-3xl font-extrabold text-white tracking-tight selectable-text">Welcome Back</h2>
+                    <p class="text-red-100/80 text-sm mt-2 font-medium selectable-text">Founder Dashboard Access</p>
+                </div>
+
+                <div class="p-10 space-y-6">
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Institutional Email</label>
+                        <input type="email" id="loginEmail" required
+                            class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] focus:border-transparent outline-none transition-all placeholder:text-gray-300"
+                            placeholder="student@rietjaipur.ac.in">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Secure Password</label>
+                        <input type="password" id="loginPassword" required
+                            class="w-full p-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-[#980000] focus:border-transparent outline-none transition-all placeholder:text-gray-300"
+                            placeholder="••••••••">
+                    </div>
+
+                    <button id="loginBtn" onclick="handleLogin()"
+                        class="w-full bg-riet-crimson text-white py-5 rounded-2xl font-bold shadow-xl shadow-red-900/20 hover:bg-red-800 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 group">
+                        <span>Sign In</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </button>
+
+                    <div class="pt-4 text-center">
+                        <p class="text-sm text-gray-500 font-medium">
+                            New Founder? 
+                            <a href="register.html" class="text-riet-crimson font-extrabold hover:underline decoration-2 underline-offset-4">Create Account</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-center">
+                <a href="https://maps.app.goo.gl/957vN6V6MRE1v6jS9" target="_blank" class="inline-flex items-center gap-2 text-xs font-bold text-gray-400 hover:text-riet-crimson transition active:scale-95">
+                    <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                    Bhankrota, Jaipur Campus
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+
+    <script>
+        // ── Supabase Configuration ──────────────────────────────────────────
+        const SUPABASE_URL = 'https://gsureyytezrupxebasul.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdXJleXl0ZXpydXB4ZWJhc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODAwMDksImV4cCI6MjA5MTY1NjAwOX0.xJPef26ve7lr-yeoHvtZ12cIRaGuwkEKHVfzL8k4Bmc';
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ── Toast System ─────────────────────────────────────────────────────
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            const colors = {
+                error:   'bg-red-600 border-red-700',
+                success: 'bg-green-600 border-green-700',
+            };
+            toast.className = `px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm border-b-4 animate-bounce-in ${colors[type]}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-12');
+                setTimeout(() => toast.remove(), 500);
+            }, 3500);
+        }
+
+        // ── Strict Waterfall Routing ────────────────────────────────────────
+        async function enforceWaterfall() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) return; // If not logged in, stay on login.html
+            
+            const { data: profile } = await supabaseClient
+                .from('profiles')
+                .select('role, is_verified')
+                .eq('id', user.id)
+                .single();
+                
+            if (!profile) return;
+
+            // The Waterfall Enforcement
+            if (!profile.is_verified) {
+                window.location.href = 'success.html';
+            } else if (!profile.role) {
+                window.location.href = 'gateway.html';
+            } else {
+                window.location.href = `${profile.role}-dashboard.html`;
+            }
+        }
+
+        // Enforce routing immediately on page load
+        document.addEventListener('DOMContentLoaded', enforceWaterfall);
+
+        // ── Authentication Handler ──────────────────────────────────────────
+        async function handleLogin() {
+            const btn      = document.getElementById('loginBtn');
+            const email    = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showToast('Please fill all credentials.');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> <span>Authenticating...</span>`;
+
+            const { error: authError } = await supabaseClient.auth.signInWithPassword({
+                email,
+                password,
+            });
+
+            if (authError) {
+                showToast(authError.message);
+                btn.disabled = false;
+                btn.innerHTML = `<span>Sign In</span> <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>`;
+                return;
+            } 
+            
+            showToast('Access Granted. Routing...', 'success');
+            
+            // Trigger the waterfall to correctly route based on profile state
+            await enforceWaterfall();
+        }
+
+        document.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+    </script>
+</body>
+</html>

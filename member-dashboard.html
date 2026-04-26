@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Dashboard | RIET E-Cell</title>
+    
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#FFCC00"> <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            overscroll-behavior-y: contain; 
+            -webkit-tap-highlight-color: transparent; 
+        }
+
+        nav, button, .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .selectable-text {
+            user-select: text;
+            -webkit-user-select: text;
+        }
+
+        .glass-overlay { backdrop-filter: blur(4px); transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col font-sans">
+
+    <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-3"></div>
+
+    <nav class="bg-white shadow-sm border-b-4 border-[#FFCC00] p-4 w-full">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-[#980000] rounded text-white flex items-center justify-center font-bold">E</div>
+                <h1 class="font-bold text-lg tracking-tight text-gray-800">RIET <span class="text-[#980000]">E-CELL</span></h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <span id="user-greeting" class="text-sm font-medium text-gray-600 no-select">Loading...</span>
+                <button onclick="handleLogout(this)" class="text-xs font-bold text-gray-400 hover:text-[#980000] uppercase tracking-widest transition active:scale-95">
+                    Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-6xl mx-auto p-6 w-full flex-grow">
+        
+        <div id="team-status-banner" class="mb-8 p-5 rounded-2xl bg-white shadow-sm border-l-4 border-blue-500 flex justify-between items-center transition-colors duration-300 no-select">
+            <div>
+                <h2 class="font-bold text-gray-800 text-xl">Status: <span id="status-text" class="text-blue-600">Ready to Join</span></h2>
+                <p id="limit-counter" class="text-sm text-gray-500 mt-1 font-medium">Active Requests: <span class="text-gray-900 font-bold">0</span> / 6</p>
+            </div>
+            <div id="leave-action"></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-1 space-y-6">
+                <div class="bg-white p-6 rounded-[1.5rem] shadow-sm border border-gray-100 relative overflow-hidden min-h-[300px]">
+                    <div class="flex justify-between items-center mb-4 no-select">
+                        <h3 class="font-bold text-lg text-gray-800">My Invitations</h3>
+                    </div>
+                    
+                    <div id="invitation-overlay" class="hidden absolute inset-0 bg-white/90 glass-overlay z-10 flex items-center justify-center text-center p-6 no-select">
+                        <div>
+                            <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <p class="font-bold text-gray-600">Section Locked</p>
+                            <p class="text-xs font-medium text-gray-400 mt-1">You are bound to a team. Invitations are disabled.</p>
+                        </div>
+                    </div>
+
+                    <div id="invitation-list" class="space-y-3 no-select">
+                        <div class="flex justify-center items-center h-40">
+                            <p class="text-sm text-gray-400 font-medium">No pending requests.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4 no-select">
+                    <h3 class="font-bold text-lg text-gray-800">Available Teams Directory</h3>
+                    
+                    <div class="relative w-full sm:w-auto">
+                        <svg class="w-4 h-4 absolute left-3 top-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input type="text" id="search-teams" placeholder="Search team or idea..." class="w-full text-sm border border-gray-200 bg-gray-50 rounded-full pl-10 pr-4 py-2 focus:ring-2 focus:ring-[#980000] focus:border-transparent outline-none transition">
+                    </div>
+                </div>
+                
+                <div id="team-directory" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-dashed border-gray-300 no-select">
+                        <p class="text-gray-400 font-medium">Loading teams from the database...</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => console.log('✅ PWA Active: ', reg.scope))
+            .catch(err => console.error('❌ PWA Failed: ', err));
+        });
+      }
+    </script>
+
+    <script>
+        const SUPABASE_URL = 'https://gsureyytezrupxebasul.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdzdXJleXl0ZXpydXB4ZWJhc3VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYwODAwMDksImV4cCI6MjA5MTY1NjAwOX0.xJPef26ve7lr-yeoHvtZ12cIRaGuwkEKHVfzL8k4Bmc';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let currentUser = null;
+        let allTeams = [];
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            const colors = type === 'success' ? 'bg-green-600 border-green-700' : 'bg-red-600 border-red-700';
+            toast.className = `px-6 py-4 rounded-2xl shadow-2xl text-white font-bold text-sm border-b-4 animate-bounce-in ${colors}`;
+            toast.textContent = message;
+            document.getElementById('toastContainer').appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-12');
+                setTimeout(() => toast.remove(), 500);
+            }, 3500);
+        }
+
+        async function initDashboard() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            
+            if (!user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            currentUser = user;
+
+            await loadUserProfile();
+            await loadInvitations(); 
+            await loadMyInvitations(); 
+            await loadTeams();
+        }
+
+        async function loadUserProfile() {
+            const { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .single();
+
+            if (error) return;
+
+            document.getElementById('user-greeting').innerText = `Hi, ${profile.full_name.split(' ')[0]}`;
+
+            if (profile.team_id) {
+                lockDashboard(profile);
+            }
+        }
+
+        function lockDashboard(profile) {
+            const banner = document.getElementById('team-status-banner');
+            const statusText = document.getElementById('status-text');
+            const overlay = document.getElementById('invitation-overlay');
+            const leaveBtnContainer = document.getElementById('leave-action');
+
+            banner.classList.remove('border-blue-500');
+            banner.classList.add('border-green-500', 'bg-green-50/30');
+            statusText.innerText = "Joined Team";
+            statusText.className = "text-green-600";
+            overlay.classList.remove('hidden');
+
+            if (profile.joined_at) {
+                const joinDate = new Date(profile.joined_at);
+                const now = new Date();
+                const diffDays = Math.ceil((now - joinDate) / (1000 * 60 * 60 * 24));
+                
+                if (diffDays <= 15) {
+                    leaveBtnContainer.innerHTML = `<button onclick="leaveTeam()" class="bg-red-50 hover:bg-red-100 text-red-600 px-5 py-2 rounded-full text-xs font-bold transition active:scale-95">Leave Team</button>`;
+                } else {
+                    leaveBtnContainer.innerHTML = `<button onclick="requestLeave()" class="bg-gray-100 hover:bg-gray-200 text-gray-500 px-5 py-2 rounded-full text-xs font-bold transition active:scale-95">Request to Exit</button>`;
+                }
+            }
+        }
+
+        async function loadInvitations() {
+            const { count, error } = await supabaseClient
+                .from('invitations')
+                .select('*', { count: 'exact', head: true })
+                .eq('from_user_id', currentUser.id) 
+                .eq('status', 'pending');
+
+            if (!error && count !== null) {
+                document.getElementById('limit-counter').innerHTML = `Active Requests: <span class="text-gray-900 font-bold">${count}</span> / 6`;
+            }
+        }
+
+        async function loadMyInvitations() {
+            const { data: invs, error } = await supabaseClient.from('invitations')
+                .select('*')
+                .eq('to_user_id', currentUser.id)
+                .eq('type', 'invite')
+                .eq('status', 'pending');
+            
+            const container = document.getElementById('invitation-list');
+            
+            if (error || !invs || invs.length === 0) {
+                container.innerHTML = `<div class="flex justify-center items-center h-40"><p class="text-sm text-gray-400 font-medium">No pending requests.</p></div>`;
+                return;
+            }
+            
+            container.innerHTML = '';
+            for (const inv of invs) {
+                const { data: teamData } = await supabaseClient.from('teams').select('name').eq('id', inv.team_id).single();
+                const teamName = teamData ? teamData.name : 'A startup';
+                
+                container.innerHTML += `
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col gap-3 justify-between items-start mb-3 text-left">
+                        <div>
+                            <p class="text-sm font-bold text-gray-800">${teamName}</p>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-widest">Sent you an invite</p>
+                        </div>
+                        <div class="flex gap-2 w-full">
+                            <button onclick="respondInvitation('${inv.id}', 'accepted', this)" class="flex-1 bg-green-100 text-green-700 px-2 py-2 rounded-lg text-xs font-bold hover:bg-green-200 transition">
+                                Join
+                            </button>
+
+                            <button onclick="respondInvitation('${inv.id}', 'rejected', this)" class="flex-1 bg-red-100 text-red-700 px-2 py-2 rounded-lg text-xs font-bold hover:bg-red-200 transition">
+                                Decline
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function respondInvitation(invitationId, action, btnElement) {
+            const originalText = btnElement.innerText;
+            btnElement.disabled = true;
+
+            if (action === 'accepted') {
+                btnElement.innerText = "Joining... Please wait";
+
+                const { error } = await supabaseClient.rpc('accept_invitation', {
+                    p_invitation_id: invitationId
+                });
+
+                if (error) {
+                    console.error("ACCEPT ERROR:", error);
+                    showToast("Error joining team", "error");
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                    return;
+                }
+
+                showToast("Successfully joined the startup!", "success");
+                btnElement.innerText = "Joined";
+
+                loadUserProfile();
+                loadMyInvitations();
+
+            } else if (action === 'rejected') {
+                btnElement.innerText = "Rejecting...";
+
+                const { error } = await supabaseClient
+                    .from('invitations')
+                    .update({ status: 'rejected' })
+                    .eq('id', invitationId);
+
+                if (error) {
+                    console.error("REJECT ERROR:", error);
+                    showToast("Error rejecting invitation", "error");
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                    return;
+                }
+
+                showToast("Invitation declined", "success");
+                btnElement.innerText = "Declined";
+
+                loadMyInvitations();
+            }
+        }
+        
+        async function requestJoin(teamId, leaderId, btnElement) {
+            alert("CLICKED");
+    const originalText = btnElement.innerText;
+
+    btnElement.innerText = "Requesting...";
+    btnElement.disabled = true;
+
+    const { error } = await supabaseClient
+        .from('invitations')
+        .insert([{
+            type: 'request',
+            from_user_id: currentUser.id,
+            to_user_id: leaderId,
+            team_id: teamId,
+            status: 'pending'
+        }]);
+
+    if (error) {
+        console.error("REQUEST ERROR:", error);
+
+        showToast("Cannot request (already in team or blocked)", "error");
+
+        // restore button
+        btnElement.innerText = originalText;
+        btnElement.disabled = false;
+
+        return; // ✅ VERY IMPORTANT
+    }
+
+    showToast("Request sent successfully", "success");
+    btnElement.innerText = "Requested";
+        }
+
+        // ── Team Directory Logic ──
+        async function loadTeams() {
+            const { data, error } = await supabaseClient
+                .from('teams')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Error loading teams:", error);
+                return;
+            }
+            
+            allTeams = data || [];
+            renderTeams(allTeams);
+        }
+
+        function renderTeams(teamsArray) {
+            const container = document.getElementById('team-directory');
+            container.innerHTML = '';
+
+            if (teamsArray.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-dashed border-gray-300 no-select">
+                        <p class="text-gray-400 font-medium">No teams match your search.</p>
+                    </div>`;
+                return;
+            }
+
+            teamsArray.forEach(t => {
+                const name = t.name || 'Unnamed Startup';
+                const code = t.team_code || 'N/A';
+                const idea = t.idea || 'No idea provided.';
+                const lookingFor = t.looking_for || 'General Members';
+
+                const card = `
+                    <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-gray-900 text-lg selectable-text">${name}</h4>
+                                <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded border border-gray-200 selectable-text">${code}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-4 line-clamp-3 selectable-text">${idea}</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 no-select">Recruiting</p>
+                            <p class="text-sm font-medium text-[#980000] mb-4 selectable-text">${lookingFor}</p>
+                        </div>
+                        <button onclick="requestJoin('${t.id}', this)"class="flex-1 bg-green-100 text-green-700 px-2 py-2 rounded-lg text-xs font-bold hover:bg-green-200 transition">
+                                
+  Request to Join
+</button>
+                            
+                        
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
+
+        document.getElementById('search-teams').addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = allTeams.filter(t => 
+                (t.name && t.name.toLowerCase().includes(term)) ||
+                (t.idea && t.idea.toLowerCase().includes(term))
+            );
+            renderTeams(filtered);
+        });
+
+        // ── Safe Placeholders (UUID Exposure removed) ──
+        async function leaveTeam() {
+            if(confirm("Are you sure you want to leave this team? This action cannot be undone.")) {
+                showToast("Action restricted by system.", "error");
+            }
+        }
+
+        async function requestLeave() {
+            showToast("Leave request routed to Team Leader", "success");
+        }
+
+        // ── Bulletproof Logout ──
+        async function handleLogout(btnElement) {
+            if (btnElement) {
+                btnElement.innerHTML = "Exiting...";
+                btnElement.disabled = true;
+            }
+            try {
+                await supabaseClient.auth.signOut();
+            } catch (error) {
+                console.error("Supabase sign out error", error);
+            } finally {
+                window.location.href = 'login.html';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+    </html>
+    
